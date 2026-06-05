@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>    
+    <title>View Inventory</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="nav-inner">
+            <div class="brand">Inventory Management</div>
+            <a href="/add-product" class="btn btn-primary">+ Add Product</a>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <h1 class="hero">Product Inventory</h1>
+
+        <% if(products.length === 0){ %>
+            <div class="empty-state">
+                <h2>No Products Available</h2>
+                <p>Add your first product to get started.</p>
+            </div>
+        <% } else { %>
+
+            <div class="products">
+                <% products.forEach(product => { %>
+                    <div class="card">
+                        <img src="<%= product.imageUrl %>" alt="<%= product.name %>">
+                        <div class="card-body">
+                            <h3><%= product.name %></h3>
+                            <p class="description"><%= product.description %></p>
+                            <p class="price">₹<%= product.price %></p>
+                            <div class="qty">Stock: <%= product.quantity %></div>
+                            <div class="actions">
+                                <a href="/edit-product/<%= product.id %>" class="btn edit">Edit</a>
+                                <a href="/delete-product/<%= product.id %>" class="btn delete" onclick="return confirm('Delete this product?')">Delete</a>
+                                <a href="/product-blog/<%= product.id%>" class="btn">Details</a>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+
+        <% } %>
+
+    </main>
+
+</body>
+</html>
