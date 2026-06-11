@@ -1,6 +1,10 @@
 const express = require('express');
 const bodyparser = require('body-parser');
+const db = require('./config/db/db');
+const Inventory = require('./models/inventoryModel');
 const app = express();
+
+db()
 
 const PORT = 3001;
 app.set('view engine', 'ejs')
@@ -14,11 +18,19 @@ app.get('/', (req, res) => {
     res.render('index')
 })
 
-app.get('/view-inventory', (req, res) => {
-    console.log("View Inventory Page Loaded");
-    res.render('view-product', {
-        products: products
+app.get('/view-inventory', async(req, res) => {
+   try{
+        const products = await Inventory.find();
+        console.log("View Inventory Page Loaded");
+        console.log(products);
+        res.render('view-product', {
+        products
     })
+   }
+   catch(err){
+        console.error(error);
+        res.status(500).send("Error loading products");
+   }
 
 })
 
@@ -28,74 +40,107 @@ app.get('/add-product', (req, res) => {
 })
 
 
-app.post('/add-product', (req, res) => {
-    const newProduct = {
-        id: Date.now(),
-        name: req.body.name,
-        description: req.body.description,
-        imageUrl: req.body.imageUrl,
-        price: req.body.price,
-        quantity: req.body.quantity
-    };
+app.post('/add-product', async(req, res) => {
+    // const newProduct = {
+    //     id: Date.now(),
+    //     name: req.body.name,
+    //     description: req.body.description,
+    //     imageUrl: req.body.imageUrl,
+    //     price: req.body.price,
+    //     quantity: req.body.quantity
+    // };
 
-    products.push(newProduct);
-    console.log(products);
-    res.redirect('/view-inventory')
-})
+    // products.push(newProduct);
+    // console.log(products);
+     try {
+        const product = await Inventory.create({
+            name: req.body.name,
+            description: req.body.description,
+            imageUrl: req.body.imageUrl,
+            price: req.body.price,
+            quantity: req.body.quantity
+        });
 
-app.get('/edit-product/:id', (req, res) => {
-    const { id } = req.params;
-    const product = products.find(p => p.id == id);
-    if (!product) {
-        return console.log("Product Not Found");;
+        console.log("Product Added Successfully" , product);
+        res.redirect('/view-inventory');
+
+    }catch(err){
+        console.log("Error in adding product =====>", err);
     }
-    console.log("Edit Product laoded successfully.");
-    console.log("Product Found:", product);
-    res.render('edit-product', {product});
 })
 
-app.post('/edit-product/:id', (req, res) => {
-    const { id } = req.params;
-    const productIndex = products.findIndex(p => p.id == id);
-    
-    if (productIndex === -1) {
-        return console.log("Product Not Found ");;
+app.get('/edit-product/:id', async(req, res) => {
+    try {
+        const { id } = req.params;
+        const product = await Inventory.findById(id);
+        
+        if (!product) {
+            return res.status(404).send("Product Not Found");
+        }
+        
+        console.log("Edit Product loaded successfully.");
+        console.log("Product Found:", product);
+        res.render('edit-product', {product});
+    } catch(err) {
+        console.log("Error loading edit product page:", err);
+        res.status(500).send("Error loading product");
     }
-    
-    products[productIndex] = {
-        id: parseInt(id),
-        name: req.body.name,
-        description: req.body.description,
-        imageUrl: req.body.imageUrl,
-        price: req.body.price,
-        quantity: req.body.quantity
-    };
-    
-    console.log("Product Updated:", products[productIndex]);
-    res.redirect('/view-inventory');
 })
 
-app.get('/delete-product/:id', (req, res) => {
-    const { id } = req.params;
-    const productIndex = products.findIndex(p => p.id == id);
-    
-    if (productIndex === -1) {
-        return console.log("Failed to delete product...");;
+app.post('/edit-product/:id', async(req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const updatedProduct = await Inventory.findByIdAndUpdate(
+            id,
+            {
+                name: req.body.name,
+                description: req.body.description,
+                imageUrl: req.body.imageUrl,
+                price: req.body.price,
+                quantity: req.body.quantity
+            },
+        );
+        
+        console.log("Product Updated Successfully:", updatedProduct);
+        res.redirect('/view-inventory');
+    } catch(err) {
+        console.log("Error updating product:", err);
+        res.status(500).send("Error updating product");
     }
-    
-    const deletedProduct = products.splice(productIndex, 1);
-    console.log("Product Deleted Sucessfully .");
-    console.log("Product Deleted:", deletedProduct);
-    res.redirect('/view-inventory');
 })
 
-app.get('/product-blog/:id',(req,res)=>{
-    const {id} = req.params;
-    let blogProduct = products.find(p => p.id == id);
+app.get('/delete-product/:id', async(req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const deletedProduct = await Inventory.findByIdAndDelete(id);
+        
+        if (!deletedProduct) {
+            return res.status(404).send("Product Not Found");
+        }
+        
+        console.log("Product Deleted Successfully.");
+        console.log("Product Deleted:", deletedProduct);
+        res.redirect('/view-inventory');
+    } catch(err) {
+        console.log("Error deleting product:", err);
+        res.status(500).send("Error deleting product");
+    }
+})
 
-    console.log("Produt Blog Page Loaded successfully !");
-    console.log("Blog Product : ", blogProduct);
-    res.render('product-blog',{blogProduct});
+app.get('/product-blog/:id', async(req,res)=>{
+    try {
+        const {id} = req.params;
+        const blogProduct = await Inventory.findById(id);
+
+        console.log("Product Blog Page Loaded successfully !");
+        console.log("Blog Product : ", blogProduct);
+        res.render('product-blog',{blogProduct});
+    } catch(err) {
+        console.log("Error loading product blog:", err);
+        res.status(500).send("Error loading product");
+    }
 })
 
 app.listen(PORT, () => {
