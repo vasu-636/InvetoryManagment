@@ -21,7 +21,7 @@
         <div class="form-card">
             <h2>Edit Product</h2>
 
-            <form action="/edit-product/<%= product.id %>" method="POST">
+            <form action="/edit-product/<%= product._id %>" method="POST">
 
             <div class="form-group">
                 <label>Product Name</label>
@@ -43,12 +43,12 @@
             </div>
 
             <div class="form-group">
-                <label>Image URL</label>
+                <label>Image Path</label>
                 <input
                     type="text"
-                    name="imageUrl"
-                    placeholder="Paste image URL"
-                    value="<%= product.imageUrl %>"
+                    name="image"
+                    placeholder="Enter image path"
+                    value="<%= product.image %>"
                     required>
             </div>
 

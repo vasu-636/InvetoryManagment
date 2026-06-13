@@ -1,17 +1,16 @@
 const express = require('express');
-const bodyparser = require('body-parser');
 const db = require('./config/db/db');
 const Inventory = require('./models/inventoryModel');
+const upload = require('./middleware/multer');
 const app = express();
 
 db()
 
 const PORT = 3001;
 app.set('view engine', 'ejs')
-app.use(bodyparser.urlencoded())
+app.use(express.urlencoded({ extended: true }))
 app.use(express.static('public'))
 
-let products = [];
 
 app.get('/', (req, res) => {
     console.log("Index page is loading.....");
@@ -23,40 +22,26 @@ app.get('/view-inventory', async(req, res) => {
         const products = await Inventory.find();
         console.log("View Inventory Page Loaded");
         console.log(products);
-        res.render('view-product', {
-        products
-    })
+        res.render('view-product', {products})
    }
    catch(err){
-        console.error(error);
-        res.status(500).send("Error loading products");
+        console.error(err);
    }
 
 })
 
 app.get('/add-product', (req, res) => {
-    console.log("Add product page loaded");
     res.render('add-product')
 })
 
+app.post('/add-product', upload.single('image'), async(req, res) => {
 
-app.post('/add-product', async(req, res) => {
-    // const newProduct = {
-    //     id: Date.now(),
-    //     name: req.body.name,
-    //     description: req.body.description,
-    //     imageUrl: req.body.imageUrl,
-    //     price: req.body.price,
-    //     quantity: req.body.quantity
-    // };
-
-    // products.push(newProduct);
-    // console.log(products);
      try {
+
         const product = await Inventory.create({
             name: req.body.name,
             description: req.body.description,
-            imageUrl: req.body.imageUrl,
+            image: '/uploads/' + req.file.filename,
             price: req.body.price,
             quantity: req.body.quantity
         });
@@ -64,7 +49,7 @@ app.post('/add-product', async(req, res) => {
         console.log("Product Added Successfully" , product);
         res.redirect('/view-inventory');
 
-    }catch(err){
+    } catch(err) {
         console.log("Error in adding product =====>", err);
     }
 })
@@ -74,16 +59,11 @@ app.get('/edit-product/:id', async(req, res) => {
         const { id } = req.params;
         const product = await Inventory.findById(id);
         
-        if (!product) {
-            return res.status(404).send("Product Not Found");
-        }
-        
         console.log("Edit Product loaded successfully.");
         console.log("Product Found:", product);
         res.render('edit-product', {product});
     } catch(err) {
         console.log("Error loading edit product page:", err);
-        res.status(500).send("Error loading product");
     }
 })
 
@@ -96,10 +76,11 @@ app.post('/edit-product/:id', async(req, res) => {
             {
                 name: req.body.name,
                 description: req.body.description,
-                imageUrl: req.body.imageUrl,
+                image: req.body.image,
                 price: req.body.price,
                 quantity: req.body.quantity
             },
+            { new: true }
         );
         
         console.log("Product Updated Successfully:", updatedProduct);
